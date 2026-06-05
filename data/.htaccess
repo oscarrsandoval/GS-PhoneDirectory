@@ -1,0 +1,10 @@
+# Deny all web access to the JSON "database". Nothing in here should ever be
+# served over HTTP. (For maximum safety, move this directory above the web
+# root and update DATA_DIR in includes/config.php — see README.)
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
