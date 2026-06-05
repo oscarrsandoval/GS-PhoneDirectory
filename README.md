@@ -10,8 +10,10 @@ auto-download.
 - **Storage**: plain JSON files (`data/contacts.json`, `data/users.json`). No
   database server, no Composer, no framework.
 
-Each contact has a first name, last name, one phone number, and a type
-(**Work / Home / Mobile**).
+Each contact has a first name, last name, an optional **company**, one phone
+number, and a type (**Work / Home / Mobile**). Company is written as the
+Grandstream `<Company>` element; most current models display it, and any model
+that doesn't support it still imports the rest of the contact fine.
 
 ### Users & roles
 

@@ -31,6 +31,7 @@ function generate_xml(array $contacts): string
     foreach ($contacts as $contact) {
         $first = trim((string)($contact['first_name'] ?? ''));
         $last = trim((string)($contact['last_name'] ?? ''));
+        $company = trim((string)($contact['company'] ?? ''));
         $number = trim((string)($contact['phone'] ?? ''));
 
         // A contact is only useful to the phone if it has a number and a name.
@@ -54,6 +55,9 @@ function generate_xml(array $contacts): string
         }
         if ($last !== '') {
             $w->writeElement('LastName', $last);
+        }
+        if ($company !== '') {
+            $w->writeElement('Company', $company);
         }
 
         $w->startElement('Phone');

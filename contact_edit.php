@@ -16,7 +16,7 @@ $contacts = read_json(CONTACTS_FILE);
 // Determine whether we are editing an existing contact or adding a new one.
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $editing = false;
-$contact = ['first_name' => '', 'last_name' => '', 'phone' => '', 'type' => 'Work'];
+$contact = ['first_name' => '', 'last_name' => '', 'company' => '', 'phone' => '', 'type' => 'Work'];
 
 if ($id > 0) {
     foreach ($contacts as $c) {
@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $first = trim((string)($_POST['first_name'] ?? ''));
     $last = trim((string)($_POST['last_name'] ?? ''));
+    $company = trim((string)($_POST['company'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
     $type = (string)($_POST['type'] ?? 'Work');
 
@@ -57,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Keep entered values for redisplay on error.
-    $contact = ['first_name' => $first, 'last_name' => $last, 'phone' => $phone, 'type' => $type];
+    $contact = ['first_name' => $first, 'last_name' => $last, 'company' => $company,
+                'phone' => $phone, 'type' => $type];
 
     if ($errors === []) {
         if ($editing) {
@@ -65,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ((int)($c['id'] ?? 0) === $id) {
                     $c['first_name'] = $first;
                     $c['last_name'] = $last;
+                    $c['company'] = $company;
                     $c['phone'] = $phone;
                     $c['type'] = $type;
                     break;
@@ -77,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id' => next_id($contacts),
                 'first_name' => $first,
                 'last_name' => $last,
+                'company' => $company,
                 'phone' => $phone,
                 'type' => $type,
             ];
@@ -117,6 +121,12 @@ render_header($editing ? 'Edit contact' : 'Add contact');
             <?php if (isset($errors['name'])): ?>
                 <p class="hint" style="color:var(--danger)"><?= e($errors['name']) ?></p>
             <?php endif; ?>
+
+            <div class="field">
+                <label for="company">Company <span class="hint">(optional)</span></label>
+                <input type="text" id="company" name="company" maxlength="128"
+                       value="<?= e($contact['company']) ?>" autocomplete="off">
+            </div>
 
             <div class="field row">
                 <div>

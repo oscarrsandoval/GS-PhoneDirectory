@@ -32,7 +32,8 @@ if ($q !== '') {
     $needle = mb_strtolower($q);
     $contacts = array_filter($contacts, static function (array $c) use ($needle): bool {
         $hay = mb_strtolower(
-            ($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? '') . ' ' . ($c['phone'] ?? '')
+            ($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? '') . ' '
+            . ($c['company'] ?? '') . ' ' . ($c['phone'] ?? '')
         );
         return str_contains($hay, $needle);
     });
@@ -72,7 +73,7 @@ render_header('Directory');
         <div class="toolbar">
             <form class="search" method="get" action="index.php">
                 <?= icon('search') ?>
-                <input type="text" name="q" placeholder="Search name or number"
+                <input type="text" name="q" placeholder="Search name, company, or number"
                        value="<?= e($q) ?>" aria-label="Search contacts">
             </form>
             <?php if ($q !== ''): ?>
@@ -106,6 +107,7 @@ render_header('Directory');
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Company</th>
                             <th>Number</th>
                             <th>Type</th>
                             <th style="text-align:right;">Actions</th>
@@ -118,6 +120,7 @@ render_header('Directory');
                     ?>
                         <tr>
                             <td><?= e($name) ?></td>
+                            <td><?= e((string)($c['company'] ?? '')) ?: '<span class="hint">—</span>' ?></td>
                             <td class="num"><?= e((string)($c['phone'] ?? '')) ?></td>
                             <td><span class="badge badge-<?= e($type) ?>"><?= e($type) ?></span></td>
                             <td class="row-actions">
