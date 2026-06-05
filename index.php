@@ -44,11 +44,14 @@ usort($contacts, static function (array $a, array $b): int {
         <=> [strtolower((string)($b['last_name'] ?? '')), strtolower((string)($b['first_name'] ?? ''))];
 });
 
-// Build the public phonebook.xml URL to display for phone configuration.
+// Build the public folder URL to display for phone configuration. Grandstream
+// phones take the directory only and append "phonebook.xml" themselves, so we
+// show the folder (with a trailing slash) and drop any "www." host alias.
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = $_SERVER['HTTP_HOST'] ?? 'your-server';
+$host = preg_replace('/^www\./i', '', $host);
 $baseDir = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/'))), '/');
-$publicUrl = $scheme . '://' . $host . $baseDir . '/phonebook.xml';
+$publicUrl = $scheme . '://' . $host . $baseDir . '/';
 
 render_header('Directory');
 ?>
@@ -61,7 +64,8 @@ render_header('Directory');
 
         <div class="pburl">
             <?= icon('download') ?>
-            <span>Point your Grandstream phones at:</span>
+            <span>Set your phones' Phonebook Server Path to this folder
+                  (the phone adds <code>phonebook.xml</code> automatically):</span>
             <code><?= e($publicUrl) ?></code>
         </div>
 
