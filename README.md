@@ -87,7 +87,7 @@ dashboard shows the exact public URL to use. In the phone's web UI:
 The generated XML looks like:
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <AddressBook>
   <version>1</version>
   <Contact>
@@ -96,11 +96,15 @@ The generated XML looks like:
     <LastName>Doe</LastName>
     <Phone type="Work">
       <phonenumber>1001</phonenumber>
-      <accountindex>0</accountindex>
+      <accountindex>1</accountindex>
     </Phone>
   </Contact>
 </AddressBook>
 ```
+
+> The `<accountindex>` value (the SIP line the phones dial out on) is set once
+> via `PHONE_ACCOUNT_INDEX` in `includes/config.php` and applied to every
+> contact when the phonebook is rebuilt.
 
 ---
 

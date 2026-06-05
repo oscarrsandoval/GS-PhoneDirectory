@@ -25,8 +25,10 @@ define('XML_PATH', dirname(__DIR__) . '/phonebook.xml');
 // Grandstream only recognises these three values (case-sensitive).
 const PHONE_TYPES = ['Work', 'Home', 'Mobile'];
 
-// Default SIP account index used by the phone for dialling (0 = first account).
-const DEFAULT_ACCOUNT_INDEX = 0;
+// The SIP account line the phones use to dial directory contacts. Written as
+// <accountindex> for every contact in phonebook.xml. Set this to the account
+// index your phones dial out on (commonly 1). Change it here and rebuild.
+const PHONE_ACCOUNT_INDEX = 1;
 
 // User roles. "admin" can manage users and contacts; "editor" can manage
 // contacts only. Legacy accounts with no role are treated as admin so an

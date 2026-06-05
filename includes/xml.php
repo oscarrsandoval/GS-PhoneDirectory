@@ -23,7 +23,7 @@ function generate_xml(array $contacts): string
     $w->openMemory();
     $w->setIndent(true);
     $w->setIndentString('  ');
-    $w->startDocument('1.0', 'UTF-8');
+    $w->startDocument('1.0', 'utf-8');
 
     $w->startElement('AddressBook');
     $w->writeElement('version', '1');
@@ -42,7 +42,10 @@ function generate_xml(array $contacts): string
         if (!in_array($type, PHONE_TYPES, true)) {
             $type = 'Work';
         }
-        $accountIndex = (string)(int)($contact['accountindex'] ?? DEFAULT_ACCOUNT_INDEX);
+        // The SIP account line the phones dial out on is a deployment-wide
+        // setting, so emit the configured value for every contact rather than
+        // any per-contact leftover. Change it once in config.php.
+        $accountIndex = (string)PHONE_ACCOUNT_INDEX;
 
         $w->startElement('Contact');
         $w->writeElement('id', (string)(int)($contact['id'] ?? 0));
@@ -65,7 +68,16 @@ function generate_xml(array $contacts): string
     $w->endElement(); // AddressBook
     $w->endDocument();
 
-    return $w->outputMemory();
+    $xml = $w->outputMemory();
+
+    // libxml normalises the declared encoding to upper-case ("UTF-8"); rewrite
+    // the declaration to lower-case to match Grandstream's sample format.
+    return preg_replace(
+        '/^<\?xml version="1\.0" encoding="UTF-8"\?>/',
+        '<?xml version="1.0" encoding="utf-8"?>',
+        $xml,
+        1
+    );
 }
 
 /**

@@ -67,7 +67,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $c['last_name'] = $last;
                     $c['phone'] = $phone;
                     $c['type'] = $type;
-                    $c['accountindex'] = (int)($c['accountindex'] ?? DEFAULT_ACCOUNT_INDEX);
                     break;
                 }
             }
@@ -80,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'last_name' => $last,
                 'phone' => $phone,
                 'type' => $type,
-                'accountindex' => DEFAULT_ACCOUNT_INDEX,
             ];
             $msg = 'Contact added.';
         }
