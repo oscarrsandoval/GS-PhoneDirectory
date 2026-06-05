@@ -34,8 +34,10 @@ if ($target === null) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $contacts = array_filter($contacts, static fn(array $c): bool => (int)($c['id'] ?? 0) !== $id);
-    write_json(CONTACTS_FILE, $contacts);
+    // Remove under a lock so a concurrent edit can't be lost.
+    update_json(CONTACTS_FILE, static fn(array $contacts): array => array_values(
+        array_filter($contacts, static fn(array $c): bool => (int)($c['id'] ?? 0) !== $id)
+    ));
     rebuild_phonebook();
 
     set_flash('success', 'Contact deleted. phonebook.xml updated.');

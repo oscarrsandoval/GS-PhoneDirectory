@@ -62,20 +62,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'phone' => $phone, 'type' => $type];
 
     if ($errors === []) {
-        if ($editing) {
-            foreach ($contacts as &$c) {
-                if ((int)($c['id'] ?? 0) === $id) {
-                    $c['first_name'] = $first;
-                    $c['last_name'] = $last;
-                    $c['company'] = $company;
-                    $c['phone'] = $phone;
-                    $c['type'] = $type;
-                    break;
+        // The whole load → modify → save runs under one lock (update_json) so
+        // concurrent edits can't clobber each other or reuse an id.
+        $found = true;
+        update_json(CONTACTS_FILE, function (array $contacts) use (
+            $editing, $id, $first, $last, $company, $phone, $type, &$found
+        ): array {
+            if ($editing) {
+                $found = false;
+                foreach ($contacts as &$c) {
+                    if ((int)($c['id'] ?? 0) === $id) {
+                        $c['first_name'] = $first;
+                        $c['last_name'] = $last;
+                        $c['company'] = $company;
+                        $c['phone'] = $phone;
+                        $c['type'] = $type;
+                        $found = true;
+                        break;
+                    }
                 }
+                unset($c);
+                return $contacts;
             }
-            unset($c);
-            $msg = 'Contact updated.';
-        } else {
+
             $contacts[] = [
                 'id' => next_id($contacts),
                 'first_name' => $first,
@@ -84,13 +93,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'phone' => $phone,
                 'type' => $type,
             ];
-            $msg = 'Contact added.';
+            return $contacts;
+        });
+
+        if ($editing && !$found) {
+            set_flash('error', 'That contact no longer exists.');
+            header('Location: index.php');
+            exit;
         }
 
-        write_json(CONTACTS_FILE, $contacts);
         rebuild_phonebook();
 
-        set_flash('success', $msg . ' phonebook.xml updated.');
+        set_flash('success', ($editing ? 'Contact updated.' : 'Contact added.') . ' phonebook.xml updated.');
         header('Location: index.php');
         exit;
     }

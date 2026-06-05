@@ -115,3 +115,54 @@ function next_id(array $records): int
 
     return $max + 1;
 }
+
+/**
+ * Atomically read-modify-write a JSON store.
+ *
+ * Holds an exclusive lock across the WHOLE load → modify → save cycle using a
+ * sidecar ".lock" file, so concurrent saves serialise instead of clobbering
+ * each other. This is what prevents lost updates (and duplicate ids) when more
+ * than one user edits at the same time.
+ *
+ * The lock is on a separate ".lock" file rather than the data file itself, so
+ * it survives the atomic temp-file + rename in write_json(). Plain readers
+ * (read_json) never block — they still get a complete file thanks to that
+ * atomic rename.
+ *
+ * The mutator receives the current decoded array and must return the array to
+ * persist. It runs while the lock is held, so any uniqueness / existence /
+ * next-id logic inside it sees a consistent, exclusive view.
+ *
+ * @param callable(array<int,array<string,mixed>>):array<int,array<string,mixed>> $mutator
+ * @return array<int,array<string,mixed>> The data that was written.
+ */
+function update_json(string $path, callable $mutator): array
+{
+    $dir = dirname($path);
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Unable to create data directory: ' . $dir);
+    }
+
+    $lock = fopen($path . '.lock', 'c');
+    if ($lock === false) {
+        throw new RuntimeException('Unable to open lock file for: ' . $path);
+    }
+
+    try {
+        if (!flock($lock, LOCK_EX)) {
+            throw new RuntimeException('Unable to acquire lock for: ' . $path);
+        }
+
+        $data = read_json($path);
+        $new = $mutator($data);
+        if (!is_array($new)) {
+            throw new RuntimeException('update_json mutator must return an array.');
+        }
+        write_json($path, $new);
+
+        return $new;
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}

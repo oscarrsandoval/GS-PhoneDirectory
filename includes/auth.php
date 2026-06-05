@@ -172,6 +172,7 @@ function require_admin(): void
 
 /**
  * Create a new user. Returns an error string, or null on success.
+ * The uniqueness check and append happen atomically under a lock.
  */
 function create_user(string $username, string $password, string $role = 'editor'): ?string
 {
@@ -185,41 +186,60 @@ function create_user(string $username, string $password, string $role = 'editor'
     if (!in_array($role, USER_ROLES, true)) {
         return 'Invalid role.';
     }
-    if (find_user($username) !== null) {
-        return 'That username already exists.';
-    }
 
-    $users = load_users();
-    $users[] = [
-        'username' => $username,
-        'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-        'role' => $role,
-        'created' => date('Y-m-d'),
-    ];
-    write_json(USERS_FILE, $users);
+    $error = null;
+    update_json(USERS_FILE, function (array $users) use ($username, $password, $role, &$error): array {
+        foreach ($users as $existing) {
+            if ((string)($existing['username'] ?? '') === $username) {
+                $error = 'That username already exists.';
+                return $users; // unchanged
+            }
+        }
+        $users[] = [
+            'username' => $username,
+            'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+            'role' => $role,
+            'created' => date('Y-m-d'),
+        ];
+        return $users;
+    });
 
-    return null;
+    return $error;
 }
 
 /**
  * Delete a user by username. Returns an error string, or null on success.
- * Refuses to remove the last remaining admin.
+ * The existence + last-admin checks and the removal happen atomically.
  */
 function delete_user(string $username): ?string
 {
-    $user = find_user($username);
-    if ($user === null) {
-        return 'That user no longer exists.';
-    }
-    if (role_of($user) === 'admin' && count_admins() <= 1) {
-        return 'You cannot remove the last administrator.';
-    }
+    $error = null;
+    update_json(USERS_FILE, function (array $users) use ($username, &$error): array {
+        $target = null;
+        $admins = 0;
+        foreach ($users as $u) {
+            if (role_of($u) === 'admin') {
+                $admins++;
+            }
+            if ((string)($u['username'] ?? '') === $username) {
+                $target = $u;
+            }
+        }
 
-    $users = array_filter(
-        load_users(),
-        static fn(array $u): bool => (string)($u['username'] ?? '') !== $username
-    );
-    write_json(USERS_FILE, $users);
+        if ($target === null) {
+            $error = 'That user no longer exists.';
+            return $users;
+        }
+        if (role_of($target) === 'admin' && $admins <= 1) {
+            $error = 'You cannot remove the last administrator.';
+            return $users;
+        }
 
-    return null;
+        return array_values(array_filter(
+            $users,
+            static fn(array $u): bool => (string)($u['username'] ?? '') !== $username
+        ));
+    });
+
+    return $error;
 }

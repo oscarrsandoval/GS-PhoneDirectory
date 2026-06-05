@@ -1,5 +1,6 @@
 # Runtime "database" — created on first use, never commit real contacts/users.
 /data/*.json
+/data/*.lock
 
 # Generated public phonebook (regenerated whenever contacts change).
 /phonebook.xml
