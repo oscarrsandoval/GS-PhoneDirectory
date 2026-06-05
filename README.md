@@ -13,6 +13,17 @@ auto-download.
 Each contact has a first name, last name, one phone number, and a type
 (**Work / Home / Mobile**).
 
+### Users & roles
+
+The app supports multiple accounts with two roles:
+
+- **Admin** — manage contacts **and** manage users (add/remove accounts).
+- **Editor** — add / edit / delete contacts only.
+
+The first account you create in `setup.php` is an **admin**. Admins get a
+**Users** link in the top nav to add more accounts (no file editing required).
+Guards prevent deleting your own account or the last remaining admin.
+
 ---
 
 ## Requirements
@@ -35,11 +46,14 @@ Each contact has a first name, last name, one phone number, and a type
 4. Sign in and start adding contacts. `phonebook.xml` appears in the app folder
    and updates on every add/edit/delete (there's also a **Rebuild XML** button).
 
-### Adding more admins
+### Adding more users
 
-This is a small tool, so there's no user-management screen. To add another
-admin, create the account via `setup.php` on a fresh install, or — on a trusted
-machine — generate a bcrypt hash and append an entry to `data/users.json`:
+Sign in as an admin and use the **Users** page (link in the top-right nav) to
+add accounts — choose **Admin** or **Editor** for each. To remove someone, hit
+**Remove** on their row.
+
+If you ever need to add a user by hand (e.g. you've locked yourself out),
+generate a bcrypt hash and append an entry to `data/users.json`:
 
 ```bash
 php -r 'echo password_hash("the-password", PASSWORD_DEFAULT), "\n";'
@@ -47,10 +61,13 @@ php -r 'echo password_hash("the-password", PASSWORD_DEFAULT), "\n";'
 
 ```json
 [
-  { "username": "admin", "password_hash": "$2y$...", "created": "2026-06-05" },
-  { "username": "alice", "password_hash": "$2y$...", "created": "2026-06-05" }
+  { "username": "admin", "password_hash": "$2y$...", "role": "admin",  "created": "2026-06-05" },
+  { "username": "alice", "password_hash": "$2y$...", "role": "editor", "created": "2026-06-05" }
 ]
 ```
+
+> Accounts with no `role` field are treated as **admin** for backwards
+> compatibility.
 
 ---
 
@@ -118,6 +135,7 @@ xmllint --noout phonebook.xml && echo "well-formed"
 index.php            Dashboard: list / search contacts, rebuild XML
 login.php / logout.php
 setup.php            First-run admin creation (self-disables)
+users.php            Admin-only: add / remove users and set roles
 contact_edit.php     Add / edit a contact
 contact_delete.php   Delete a contact (with confirmation)
 phonebook.xml        Generated — what the phones download (git-ignored)

@@ -28,6 +28,11 @@ const PHONE_TYPES = ['Work', 'Home', 'Mobile'];
 // Default SIP account index used by the phone for dialling (0 = first account).
 const DEFAULT_ACCOUNT_INDEX = 0;
 
+// User roles. "admin" can manage users and contacts; "editor" can manage
+// contacts only. Legacy accounts with no role are treated as admin so an
+// existing install is never locked out (see current_role()).
+const USER_ROLES = ['admin', 'editor'];
+
 // Display name used in page titles / headers.
 const APP_NAME = 'GS Phone Directory';
 

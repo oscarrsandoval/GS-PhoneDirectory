@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($password !== $confirm) {
         $errors[] = 'The two passwords do not match.';
     } else {
-        $error = create_user($username, $password);
+        $error = create_user($username, $password, 'admin');
         if ($error !== null) {
             $errors[] = $error;
         } else {

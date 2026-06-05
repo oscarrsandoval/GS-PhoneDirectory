@@ -111,6 +111,44 @@ function is_logged_in(): bool
 }
 
 /**
+ * Role of a given user. Missing role (legacy accounts) counts as "admin" so an
+ * existing single-user install keeps full access after this feature was added.
+ */
+function role_of(?array $user): string
+{
+    if ($user === null) {
+        return 'editor';
+    }
+    $role = (string)($user['role'] ?? 'admin');
+    return in_array($role, USER_ROLES, true) ? $role : 'admin';
+}
+
+function current_role(): string
+{
+    $username = current_user();
+    return $username === null ? 'editor' : role_of(find_user($username));
+}
+
+function is_admin(): bool
+{
+    return current_role() === 'admin';
+}
+
+/**
+ * Number of admin accounts — used to stop the last admin being removed.
+ */
+function count_admins(): int
+{
+    $n = 0;
+    foreach (load_users() as $user) {
+        if (role_of($user) === 'admin') {
+            $n++;
+        }
+    }
+    return $n;
+}
+
+/**
  * Gate a page: redirect to the login screen if not authenticated.
  */
 function require_login(): void
@@ -122,9 +160,20 @@ function require_login(): void
 }
 
 /**
+ * Gate a page to admins only. Assumes require_login() already ran.
+ */
+function require_admin(): void
+{
+    if (!is_admin()) {
+        http_response_code(403);
+        exit('Forbidden: this page is for administrators only.');
+    }
+}
+
+/**
  * Create a new user. Returns an error string, or null on success.
  */
-function create_user(string $username, string $password): ?string
+function create_user(string $username, string $password, string $role = 'editor'): ?string
 {
     $username = trim($username);
     if ($username === '') {
@@ -132,6 +181,9 @@ function create_user(string $username, string $password): ?string
     }
     if (strlen($password) < 8) {
         return 'Password must be at least 8 characters.';
+    }
+    if (!in_array($role, USER_ROLES, true)) {
+        return 'Invalid role.';
     }
     if (find_user($username) !== null) {
         return 'That username already exists.';
@@ -141,8 +193,32 @@ function create_user(string $username, string $password): ?string
     $users[] = [
         'username' => $username,
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'role' => $role,
         'created' => date('Y-m-d'),
     ];
+    write_json(USERS_FILE, $users);
+
+    return null;
+}
+
+/**
+ * Delete a user by username. Returns an error string, or null on success.
+ * Refuses to remove the last remaining admin.
+ */
+function delete_user(string $username): ?string
+{
+    $user = find_user($username);
+    if ($user === null) {
+        return 'That user no longer exists.';
+    }
+    if (role_of($user) === 'admin' && count_admins() <= 1) {
+        return 'You cannot remove the last administrator.';
+    }
+
+    $users = array_filter(
+        load_users(),
+        static fn(array $u): bool => (string)($u['username'] ?? '') !== $username
+    );
     write_json(USERS_FILE, $users);
 
     return null;
