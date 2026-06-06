@@ -1,0 +1,9 @@
+# These PHP includes are only meant to be require()'d by the app, never
+# requested directly over HTTP.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
